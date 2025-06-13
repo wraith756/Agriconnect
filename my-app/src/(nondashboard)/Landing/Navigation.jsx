@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Leaf } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -49,9 +50,12 @@ const Navigation = () => {
             </li>
           </ul>
 
-          <button className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+          <Link 
+            to="/signin" 
+            className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
             Login
-          </button>
+          </Link>
         </div>
       </div>
     </nav>
