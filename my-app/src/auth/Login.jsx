@@ -3,10 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../utils/supabaseClient";
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -16,45 +15,50 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+    setErrorMessage("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
 
     const email = formData.email.trim();
     const password = formData.password.trim();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      console.error("Login error:", error);
-      alert("Invalid login credentials");
-      return;
+      if (error) {
+        setErrorMessage("🚫 Invalid login credentials. Please try again.");
+        console.error("Login error:", error);
+        setLoading(false);
+        return;
+      }
+
+      const { user } = data;
+      const role = user?.user_metadata?.role;
+
+      if (!role) {
+        setErrorMessage("No role assigned to this user.");
+        setLoading(false);
+        return;
+      }
+
+      // Role-based navigation
+      if (role === "Farmer") navigate("/Farmer/farmer-dashboard");
+      else if (role === "Customer") navigate("/Customer/customer-dashboard");
+      else if (role === "Investor") navigate("/Investor/investor-dashboard");
+      else setErrorMessage("Unrecognized role. Contact admin.");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // Fetch user metadata
-    const { user } = data;
-
-    if (!user) {
-      alert("User not found");
-      return;
-    }
-
-    const role = user.user_metadata?.role;
-    console.log("Logged in user role:", role);
-
-    // Redirect based on role
-    if (role === "Farmer") {
-      navigate("/farmer-dashboard");
-    } else if (role === "Customer") {
-      navigate("/customer-dashboard"); // ✅ updated
-    } else if (role === "Investor") {
-      navigate("/investor-dashboard");
-    }
-    
   };
 
   return (
@@ -64,6 +68,7 @@ const Login = () => {
       <div className="circle-3"></div>
       <div className="circle-4"></div>
       <div className="circle-5"></div>
+
       <div className="auth-form-container">
         <div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
@@ -76,6 +81,7 @@ const Login = () => {
             </Link>
           </p>
         </div>
+
         <form className="auth-form" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email">Email address</label>
@@ -89,6 +95,7 @@ const Login = () => {
               onChange={handleChange}
             />
           </div>
+
           <div>
             <label htmlFor="password">Password</label>
             <input
@@ -101,7 +108,14 @@ const Login = () => {
               onChange={handleChange}
             />
           </div>
-          <button type="submit">Sign in</button>
+
+          {errorMessage && (
+            <div className="text-sm mt-2 text-red-600">{errorMessage}</div>
+          )}
+
+          <button type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
         </form>
       </div>
     </div>

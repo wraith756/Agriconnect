@@ -1,6 +1,6 @@
-import { supabase } from "../utils/supabaseClient";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "../utils/supabaseClient";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -11,41 +11,87 @@ const SignUp = () => {
     role: "",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [matchError, setMatchError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
+
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
+
+    if (name === "password") {
+      validatePassword(value);
+    }
+
+    if (name === "confirmPassword") {
+      if (value !== formData.password) {
+        setMatchError("⚠️ Passwords do not match.");
+      } else {
+        setMatchError("");
+      }
+    }
+
+    if (name === "password" && formData.confirmPassword !== "") {
+      if (formData.confirmPassword !== value) {
+        setMatchError("⚠️ Passwords do not match.");
+      } else {
+        setMatchError("");
+      }
+    }
+  };
+
+  const validatePassword = (password) => {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?`~]/.test(
+      password
+    );
+    const isValidLength = password.length >= 8;
+
+    if (
+      hasLowercase &&
+      hasUppercase &&
+      hasDigit &&
+      hasSpecialChar &&
+      isValidLength
+    ) {
+      setPasswordError("");
+    } else {
+      setPasswordError(
+        "Password must include:\n✔ Uppercase (A–Z),\n✔ Lowercase (a–z),\n✔ Number (0–9),\n✔ Symbol (!@#...),\n✔ Min 8 characters"
+      );
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // extract data from formData object
     const { fullName, email, password, confirmPassword, role } = formData;
 
-    console.log("Form submitted:", {
-      fullName,
-      email,
-      password,
-      confirmPassword,
-      role,
-    });
+    if (password !== confirmPassword) {
+      setMatchError("⚠️ Passwords do not match.");
+      return;
+    }
 
-    if (password.trim() !== confirmPassword.trim()) {
-      alert("Passwords do not match.");
+    if (passwordError) {
+      alert("Password does not meet all requirements.");
       return;
     }
 
     try {
+      setLoading(true);
       const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
+        email,
+        password,
         options: {
           data: {
-            fullName: fullName,
-            role: role,
+            fullName,
+            role,
           },
         },
       });
@@ -54,12 +100,20 @@ const SignUp = () => {
         console.error("Supabase signup error:", error);
         alert(error.message);
       } else {
-        console.log("User signed up successfully:", data);
-        alert("Signup successful!");
+        setSuccessMessage("✅ Signup successful! Please verify via email.");
+        setFormData({
+          fullName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          role: "",
+        });
       }
     } catch (err) {
       console.error("Unexpected error:", err);
       alert("Unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,6 +124,7 @@ const SignUp = () => {
       <div className="circle-3"></div>
       <div className="circle-4"></div>
       <div className="circle-5"></div>
+
       <div className="auth-form-container">
         <div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
@@ -77,11 +132,12 @@ const SignUp = () => {
           </h2>
           <p className="text-gray-600 mb-6">
             Or{" "}
-            <Link to="/Login" className="link">
-              Sign-in To Your Account
+            <Link to="/login" className="link">
+              Sign in to your account
             </Link>
           </p>
         </div>
+
         <form className="auth-form" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="fullName">Full Name</label>
@@ -95,6 +151,7 @@ const SignUp = () => {
               onChange={handleChange}
             />
           </div>
+
           <div>
             <label htmlFor="email">Email address</label>
             <input
@@ -107,6 +164,7 @@ const SignUp = () => {
               onChange={handleChange}
             />
           </div>
+
           <div>
             <label htmlFor="password">Password</label>
             <input
@@ -114,11 +172,17 @@ const SignUp = () => {
               name="password"
               type="password"
               required
-              placeholder="Create a password"
+              placeholder="Create a strong password"
               value={formData.password}
               onChange={handleChange}
             />
+            {passwordError && (
+              <div className="text-sm mt-2 p-2 rounded bg-red-50 border border-red-300 text-red-700 whitespace-pre-line">
+                {passwordError}
+              </div>
+            )}
           </div>
+
           <div>
             <label htmlFor="confirmPassword">Confirm Password</label>
             <input
@@ -126,11 +190,15 @@ const SignUp = () => {
               name="confirmPassword"
               type="password"
               required
-              placeholder="Confirm your password"
+              placeholder="Re-enter your password"
               value={formData.confirmPassword}
               onChange={handleChange}
             />
+            {matchError && (
+              <div className="text-sm mt-1 text-red-600">{matchError}</div>
+            )}
           </div>
+
           <div>
             <label htmlFor="role">Role</label>
             <select
@@ -148,7 +216,15 @@ const SignUp = () => {
             </select>
           </div>
 
-          <button type="submit">Sign up</button>
+          <button type="submit" disabled={loading}>
+            {loading ? "Signing up..." : "Sign up"}
+          </button>
+
+          {successMessage && (
+            <div className="mt-4 p-2 bg-green-100 text-green-800 border border-green-300 rounded text-sm">
+              {successMessage}
+            </div>
+          )}
         </form>
       </div>
     </div>
