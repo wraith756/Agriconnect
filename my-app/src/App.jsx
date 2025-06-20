@@ -1,18 +1,25 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Landing from "./(nondashboard)/Landing/page";
-import SignIn from "./(auth)/[signin]/SignIn";
-import SignUp from "./(auth)/[signup]/SignUp";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SignUp from "./auth/SignUp";
+import Login from "./auth/Login";
+import FarmerDashboard from "./dashboard/Farmer/FarmerDashboard";
+import InvestorDashboard from "./dashboard/Investor/InvestorDashboard";
+import CustomerDashboard from "./dashboard/Customer/CustomerDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./nondashboard/Landing/page";
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/signin" element={<SignIn />} />
+        <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/Farmer/farmer-dashboard" element={<FarmerDashboard />} />
+        <Route path="/Investor/investor-dashboard" element={<InvestorDashboard />} />
+        <Route path="/Customer/customer-dashboard" element={<CustomerDashboard />} />
+        <Route path="/protected" element={<ProtectedRoute />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
